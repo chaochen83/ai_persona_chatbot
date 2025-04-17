@@ -1,5 +1,6 @@
 # from langchain.document_loaders import DirectoryLoader
 import json
+import time
 from langchain_community.document_loaders import DirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
@@ -82,6 +83,8 @@ for i in range(how_many_pages):
 
     all_responses.append(data)
 
+    # Too fast will get API rate limited
+    time.sleep(1) 
     # Extract next cursor
     try:
         cursor = data["cursor"]["bottom"]
