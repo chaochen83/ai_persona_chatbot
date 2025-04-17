@@ -25,7 +25,17 @@ RAPID_API_KEY = os.environ['RAPID_API_KEY']
 # Need to be a place with write permissions, otherwise it will fail with: OSError: [Errno 30] Read-only file system
 CHROMA_PATH = "/tmp/chroma/twitter/trump"
 tw_user_id = 25073877 # Trump
-how_many_pages = 1
+
+# vitalik.eth
+#CHROMA_PATH = "/tmp/chroma/twitter/vitalik"
+#tw_user_id = 295218901 
+
+# suji_yan
+# CHROMA_PATH = "/tmp/chroma/twitter/suji"
+# tw_user_id = 635682749
+
+
+how_many_pages = 50
 
 # data = [
 #   {
@@ -99,10 +109,10 @@ def find_full_text_with_ids(data, current_id=None, seen = None):
             if key == "rest_id":
                 local_id = value  # Update current ID
             elif key == "text": # If the tweet is long, then this API will return a "text" which contains all content, besides "full_text" which contains truncated content ending with "..."
-                if local_id not in seen and local_id != None:  # "who-to-follow" item has no "rest_id"(local_id)
+                if local_id not in seen and value != None and local_id != None:  # "who-to-follow" item has no "rest_id"(local_id)
                     seen.add(local_id)
                     results.append({"metadata": { "source": local_id }, "text": value})
-            elif key == "full_text" and local_id != None: # if used "text" then don't use "full_text"
+            elif key == "full_text" and value != None and local_id != None: # if used "text" then don't use "full_text"
                 if local_id not in seen:
                     seen.add(local_id)
                     results.append({"metadata": { "source": local_id }, "text": value})

@@ -68,7 +68,7 @@ def generate_prompt(user_message):
 
     # Search the DB.
     results = db.similarity_search_with_relevance_scores(user_message, k=3)
-    # print(f"Results: {results}")
+    print(f"Results: {results}")
     if len(results) == 0 or results[0][1] < 0.7:
         print(f"Unable to find matching results.")
 
