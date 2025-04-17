@@ -8,7 +8,7 @@ A Streamlit application that allows users to chat with different AI personas. Th
 - Real-time chat interface
 - Different AI personas with unique response styles
 - Persistent chat history
-- OpenAI GPT-3.5 integration via LangChain
+- OpenAI GPT-4.1 integration via LangChain
 
 ## Setup
 
