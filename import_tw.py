@@ -112,10 +112,10 @@ def find_full_text_with_ids(data, current_id=None, seen = None):
             if key == "rest_id":
                 local_id = value  # Update current ID
             elif key == "text": # If the tweet is long, then this API will return a "text" which contains all content, besides "full_text" which contains truncated content ending with "..."
-                if local_id not in seen and value != None and local_id != None:  # "who-to-follow" item has no "rest_id"(local_id)
+                if local_id not in seen and value != None and isinstance(value, str) and local_id != None:  # "who-to-follow" item has no "rest_id"(local_id)
                     seen.add(local_id)
                     results.append({"metadata": { "source": local_id }, "text": value})
-            elif key == "full_text" and value != None and local_id != None: # if used "text" then don't use "full_text"
+            elif key == "full_text" and value != None and isinstance(value, str) and local_id != None: # if used "text" then don't use "full_text"
                 if local_id not in seen:
                     seen.add(local_id)
                     results.append({"metadata": { "source": local_id }, "text": value})
