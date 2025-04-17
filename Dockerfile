@@ -1,5 +1,5 @@
-# Use Python 3.11 slim image as base
-FROM python:3.11-slim
+# Use CentOS-based Python 3.11 image
+FROM centos/python-311-centos7
 
 # Set working directory
 WORKDIR /app
@@ -7,12 +7,14 @@ WORKDIR /app
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    STREAMLIT_SERVER_PORT=8501
+    STREAMLIT_SERVER_PORT=8501 \
+    OPENAI_API_KEY=${OPENAI_API_KEY} \
+    RAPID_API_KEY=${RAPID_API_KEY}
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Install system dependencies using yum
+RUN yum update -y && \
+    yum install -y gcc gcc-c++ make && \
+    yum clean all
 
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .

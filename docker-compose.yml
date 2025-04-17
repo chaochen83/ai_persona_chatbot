@@ -10,6 +10,7 @@ services:
       - chroma_data:/tmp/chroma
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RAPID_API_KEY=${RAPID_API_KEY}
     restart: unless-stopped
 
 volumes:
