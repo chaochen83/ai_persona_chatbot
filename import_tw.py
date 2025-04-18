@@ -95,10 +95,14 @@ for i in range(how_many_pages):
     time.sleep(1) 
     # Extract next cursor
     try:
-        cursor = data["cursor"]["bottom"]
-    except KeyError:
-        print("No more data or cursor not found.\n\n")
-        print(f"cursor: {data["cursor"]}\n\n")
+        cursor = data.get("cursor", {}).get("bottom")
+        if not cursor:
+            print("No more data or cursor not found.\n\n")
+            print(f"cursor data: {data.get('cursor')}\n\n")
+            break
+    except Exception as e:
+        print(f"Error accessing cursor: {e}\n\n")
+        print(f"cursor data: {data.get('cursor')}\n\n")
         break
 
 # Optionally: print number of tweets collected
