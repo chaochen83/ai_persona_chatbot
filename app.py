@@ -19,23 +19,38 @@ users = [
         "name": "Trump",
         "avatar": "👩‍💼",
         "persona": "You are Donald Trump, 45th & 47th President of the United States of America. You are known for your brash personality, and your use of social media to communicate with the public.",
+        "twitter_post_url_prefix": "https://x.com/realDonaldTrump",
         "chroma_path": "/tmp/chroma/twitter/trump"
     },
     {
         "name": "Vitalik",
         "avatar": "👨‍🔬",
         "persona": "You are Vitalik Buterin, the creator of Ethereum. You are known for your work in the blockchain space, and your support for the freedom of speech.",
+        "twitter_post_url_prefix": "https://x.com/VitalikButerin",
         "chroma_path": "/tmp/chroma/twitter/vitalik"
     },
     {
         "name": "Suji",
         "avatar": "👨‍🎨",
         "persona": "You are Suji, founder of @realmasknetwork / @thefireflyapp $mask🐦 Maintain some fediverse instances sujiyan.eth",
+        "twitter_post_url_prefix": "https://x.com/suji_yan",
         "chroma_path": "/tmp/chroma/twitter/suji"
+    },
+    {
+        "name": "Yi He",
+        "avatar": "👩‍💼",
+        "persona": "You are Suji, Co-Founder & Chief Customer Service Officer @Binance, Holder of #BNB",
+        "twitter_post_url_prefix": "https://x.com/heyibinance",
+        "chroma_path": "/tmp/chroma/twitter/heyi"
+    },
+    {
+        "name": "CZ",
+        "avatar": "👨‍🎨",
+        "persona": "You are CZ, the co-founder and former CEO of Binance",
+        "twitter_post_url_prefix": "https://x.com/cz_binance",
+        "chroma_path": "/tmp/chroma/twitter/cz"
     }
 ]
-
-
 
 # Initialize the chat model
 def get_chat_model():
@@ -57,6 +72,23 @@ and include only the response itself without any additional text.
 Answer the question based on the above context:  {question}
 """
 
+FOLLOW_UP_PROMPT = """
+What else should I ask about this: 
+{context}
+
+Generate 1 relevant follow-up question that would help the user learn more about this topic. 
+Format each question that starts with "Would you like to know more about...".
+Make the questions specific and related to the context.
+"""
+
+# FOLLOW_UP_PROMPT = """
+# Based on the following context:
+# {context}
+
+# Generate 1 relevant follow-up question that would help the user learn more about this topic. 
+# Format each question that starts with "Would you like to know more about...".
+# Make the questions specific and related to the context.
+# """
 
 def generate_prompt(user_message):
     chroma_path = users[st.session_state.selected_user]['chroma_path']
@@ -76,7 +108,7 @@ def generate_prompt(user_message):
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
     prompt = prompt_template.format(context=context_text, question=user_message)
     # print(f"prompt: {prompt}")
-    return prompt
+    return prompt, results, context_text
 
 # Initialize chat history
 if 'messages' not in st.session_state:
@@ -105,15 +137,23 @@ st.title("AI Chat Interface")
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
+        if "follow_ups" in message:
+            # st.markdown("**Follow-up Question:**")
+            st.write(message["follow_ups"])        
+        if "references" in message:
+            st.markdown("**References:**")
+            for ref in message["references"]:
+                st.markdown(f"- {ref}")
+
 
 # Chat input
-if prompt := st.chat_input("What would you like to ask?"):
+if question := st.chat_input("What would you like to ask?"):
     # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.session_state.messages.append({"role": "user", "content": question})
     
     # Display user message
     with st.chat_message("user"):
-        st.write(prompt)
+        st.write(question)
     
     # Get selected user's persona
     selected_user = users[st.session_state.selected_user]
@@ -121,12 +161,12 @@ if prompt := st.chat_input("What would you like to ask?"):
     # Initialize chat model
     chat = get_chat_model()
 
-    prompt_with_RAG = generate_prompt(prompt)
+    answer_with_RAG, search_results, context_text = generate_prompt(question)
     # print(f"prompt_with_RAG: {prompt_with_RAG}")
 
     # Create system message with persona
     system_message = SystemMessage(content=selected_user["persona"])
-    human_message = HumanMessage(content=prompt_with_RAG)
+    human_message = HumanMessage(content=answer_with_RAG)
     
     print(f"system_message: {system_message}\n\n")
     print(f"human_message: {human_message}\n\n")
@@ -134,9 +174,37 @@ if prompt := st.chat_input("What would you like to ask?"):
     # Get AI response
     response = chat.invoke([system_message, human_message])
     
-    # Add AI response to chat history
-    st.session_state.messages.append({"role": "assistant", "content": response.content})
+    # Generate follow-up questions
+    follow_up_prompt = FOLLOW_UP_PROMPT.format(context=question)
+    follow_up_response = chat.invoke([SystemMessage(content="You are a helpful assistant that generates relevant follow-up questions."), 
+                                    HumanMessage(content=follow_up_prompt)])
+    print(f"follow_up_prompt: {follow_up_prompt}\n\n")
+    print(f"follow_up_response: {follow_up_response}\n\n")
+    follow_up_questions = follow_up_response.content
+    print(f"follow_up_questions: {follow_up_questions}\n\n")
     
-    # Display AI response
+    # Extract references from search results
+    references = []
+    for doc, score in search_results:
+        if hasattr(doc, 'metadata') and 'source' in doc.metadata:
+            ref = f"{selected_user['twitter_post_url_prefix']}/status/{doc.metadata['source']}"
+            references.append(ref)
+        else:
+            references.append("Source document")
+    
+    # Add AI response to chat history with references and follow-up questions
+    st.session_state.messages.append({
+        "role": "assistant", 
+        "content": response.content,
+        "references": references,
+        "follow_ups": follow_up_questions
+    })
+    
+    # Display AI response with references and follow-up questions
     with st.chat_message("assistant"):
-        st.write(response.content) 
+        st.write(response.content)
+        # st.markdown("**Follow-up Question:**")
+        st.write(follow_up_questions)
+        st.markdown("**References:**")
+        for ref in references:
+            st.markdown(f"- {ref}")

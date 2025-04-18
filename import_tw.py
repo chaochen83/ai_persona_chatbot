@@ -24,8 +24,8 @@ openai.api_key = os.environ['OPENAI_API_KEY']
 RAPID_API_KEY = os.environ['RAPID_API_KEY']
 
 # Need to be a place with write permissions, otherwise it will fail with: OSError: [Errno 30] Read-only file system
-CHROMA_PATH = "/tmp/chroma/twitter/trump"
-tw_user_id = 25073877 # Trump
+# CHROMA_PATH = "/tmp/chroma/twitter/trump"
+# tw_user_id = 25073877 # Trump
 
 # vitalik.eth
 #CHROMA_PATH = "/tmp/chroma/twitter/vitalik"
@@ -34,6 +34,14 @@ tw_user_id = 25073877 # Trump
 # suji_yan
 # CHROMA_PATH = "/tmp/chroma/twitter/suji"
 # tw_user_id = 635682749
+
+# heyibinance
+# CHROMA_PATH = "/tmp/chroma/twitter/heyi"
+# tw_user_id = 1003840309166366721
+
+# cz_binance
+CHROMA_PATH = "/tmp/chroma/twitter/cz"
+tw_user_id = 902926941413453824
 
 
 how_many_pages = 50
