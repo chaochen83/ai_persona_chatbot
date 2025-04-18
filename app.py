@@ -178,10 +178,10 @@ if question := st.chat_input("What would you like to ask?"):
     follow_up_prompt = FOLLOW_UP_PROMPT.format(context=question)
     follow_up_response = chat.invoke([SystemMessage(content="You are a helpful assistant that generates relevant follow-up questions."), 
                                     HumanMessage(content=follow_up_prompt)])
-    print(f"follow_up_prompt: {follow_up_prompt}\n\n")
-    print(f"follow_up_response: {follow_up_response}\n\n")
+    # print(f"follow_up_prompt: {follow_up_prompt}\n\n")
+    # print(f"follow_up_response: {follow_up_response}\n\n")
     follow_up_questions = follow_up_response.content
-    print(f"follow_up_questions: {follow_up_questions}\n\n")
+    # print(f"follow_up_questions: {follow_up_questions}\n\n")
     
     # Extract references from search results
     references = []
@@ -199,7 +199,9 @@ if question := st.chat_input("What would you like to ask?"):
         "references": references,
         "follow_ups": follow_up_questions
     })
-    
+    print(f"Response: {response.content}\n")
+    print(f"Follow ups: {follow_up_questions}\n\n")
+
     # Display AI response with references and follow-up questions
     with st.chat_message("assistant"):
         st.write(response.content)
