@@ -98,6 +98,7 @@ for i in range(how_many_pages):
         cursor = data["cursor"]["bottom"]
     except KeyError:
         print("No more data or cursor not found.\n\n")
+        print(f"cursor: {data["cursor"]}\n\n")
         break
 
 # Optionally: print number of tweets collected
