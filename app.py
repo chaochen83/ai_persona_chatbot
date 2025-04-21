@@ -39,14 +39,14 @@ users = [
     {
         "name": "Yi He",
         "avatar": "👩‍💼",
-        "persona": "You are Suji, Co-Founder & Chief Customer Service Officer @Binance, Holder of #BNB",
+        "persona": "You are 一姐, Co-Founder & Chief Customer Service Officer @Binance, Holder of #BNB",
         "twitter_post_url_prefix": "https://x.com/heyibinance",
         "chroma_path": "/tmp/chroma/twitter/heyi"
     },
     {
         "name": "CZ",
         "avatar": "👨‍🎨",
-        "persona": "You are CZ, the co-founder and former CEO of Binance",
+        "persona": "You are 赵长鹏, the co-founder and former CEO of Binance",
         "twitter_post_url_prefix": "https://x.com/cz_binance",
         "chroma_path": "/tmp/chroma/twitter/cz"
     }
@@ -81,14 +81,6 @@ Format each question that starts with "Would you like to know more about...".
 Make the questions specific and related to the context.
 """
 
-# FOLLOW_UP_PROMPT = """
-# Based on the following context:
-# {context}
-
-# Generate 1 relevant follow-up question that would help the user learn more about this topic. 
-# Format each question that starts with "Would you like to know more about...".
-# Make the questions specific and related to the context.
-# """
 
 def generate_prompt(user_message):
     chroma_path = users[st.session_state.selected_user]['chroma_path']
@@ -173,6 +165,7 @@ if question := st.chat_input("What would you like to ask?"):
     
     # Get AI response
     response = chat.invoke([system_message, human_message])
+    print(f"Response: {response.content}\n")
     
     # Generate follow-up questions
     follow_up_prompt = FOLLOW_UP_PROMPT.format(context=question)
@@ -181,14 +174,18 @@ if question := st.chat_input("What would you like to ask?"):
     # print(f"follow_up_prompt: {follow_up_prompt}\n\n")
     # print(f"follow_up_response: {follow_up_response}\n\n")
     follow_up_questions = follow_up_response.content
-    # print(f"follow_up_questions: {follow_up_questions}\n\n")
+    print(f"Follow ups: {follow_up_questions}\n\n")
     
     # Extract references from search results
     references = []
     for doc, score in search_results:
         if hasattr(doc, 'metadata') and 'source' in doc.metadata:
-            ref = f"{selected_user['twitter_post_url_prefix']}/status/{doc.metadata['source']}"
-            references.append(ref)
+            if 'type' not in doc.metadata or doc.metadata['type'] == 'TW':  # Only posts from Twitter has open ref. Old import don't have 'type':
+                ref = f"{selected_user['twitter_post_url_prefix']}/status/{doc.metadata['source']}"
+                references.append(ref)
+            elif  doc.metadata['type'] == 'FC': # Farcaster not open
+                ref = f"Farcaster: {doc.metadata['source']}"
+                references.append(ref)
         else:
             references.append("Source document")
     
@@ -199,8 +196,6 @@ if question := st.chat_input("What would you like to ask?"):
         "references": references,
         "follow_ups": follow_up_questions
     })
-    print(f"Response: {response.content}\n")
-    print(f"Follow ups: {follow_up_questions}\n\n")
 
     # Display AI response with references and follow-up questions
     with st.chat_message("assistant"):
