@@ -23,6 +23,9 @@ openai.api_key = os.environ['OPENAI_API_KEY']
 
 RAPID_API_KEY = os.environ['RAPID_API_KEY']
 
+META_TYPE = "TW" # Twitter
+
+
 # Need to be a place with write permissions, otherwise it will fail with: OSError: [Errno 30] Read-only file system
 # CHROMA_PATH = "/tmp/chroma/twitter/trump"
 # tw_user_id = 25073877 # Trump
@@ -127,11 +130,11 @@ def find_full_text_with_ids(data, current_id=None, seen = None):
             elif key == "text": # If the tweet is long, then this API will return a "text" which contains all content, besides "full_text" which contains truncated content ending with "..."
                 if local_id not in seen and value != None and isinstance(value, str) and local_id != None:  # "who-to-follow" item has no "rest_id"(local_id)
                     seen.add(local_id)
-                    results.append({"metadata": { "source": local_id }, "text": value})
+                    results.append({"metadata": { "source": local_id, "type": META_TYPE }, "text": value})
             elif key == "full_text" and value != None and isinstance(value, str) and local_id != None: # if used "text" then don't use "full_text"
                 if local_id not in seen:
                     seen.add(local_id)
-                    results.append({"metadata": { "source": local_id }, "text": value})
+                    results.append({"metadata": { "source": local_id, "type": META_TYPE }, "text": value})
             else:
                 results.extend(find_full_text_with_ids(value, local_id, seen))
     

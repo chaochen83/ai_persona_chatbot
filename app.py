@@ -5,6 +5,13 @@ import os
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
+import time
+from models import User, get_pgsql_db, STATUS_FULLY_IMPORTED, get_users, insert_new_user_to_pgsql_db
+from sqlalchemy.orm import Session
+import requests
+import json
+from langchain.schema import Document
+import shutil
 
 # Load environment variables
 load_dotenv()
@@ -12,45 +19,8 @@ load_dotenv()
 # Initialize session state for selected user
 if 'selected_user' not in st.session_state:
     st.session_state.selected_user = None
-
-# Define users with their personas and Chroma paths
-users = [
-    {
-        "name": "Trump",
-        "avatar": "👩‍💼",
-        "persona": "You are Donald Trump, 45th & 47th President of the United States of America. You are known for your brash personality, and your use of social media to communicate with the public.",
-        "twitter_post_url_prefix": "https://x.com/realDonaldTrump",
-        "chroma_path": "/tmp/chroma/twitter/trump"
-    },
-    {
-        "name": "Vitalik",
-        "avatar": "👨‍🔬",
-        "persona": "You are Vitalik Buterin, the creator of Ethereum. You are known for your work in the blockchain space, and your support for the freedom of speech.",
-        "twitter_post_url_prefix": "https://x.com/VitalikButerin",
-        "chroma_path": "/tmp/chroma/twitter/vitalik"
-    },
-    {
-        "name": "Suji",
-        "avatar": "👨‍🎨",
-        "persona": "You are Suji, founder of @realmasknetwork / @thefireflyapp $mask🐦 Maintain some fediverse instances sujiyan.eth",
-        "twitter_post_url_prefix": "https://x.com/suji_yan",
-        "chroma_path": "/tmp/chroma/twitter/suji"
-    },
-    {
-        "name": "Yi He",
-        "avatar": "👩‍💼",
-        "persona": "You are 一姐, Co-Founder & Chief Customer Service Officer @Binance, Holder of #BNB",
-        "twitter_post_url_prefix": "https://x.com/heyibinance",
-        "chroma_path": "/tmp/chroma/twitter/heyi"
-    },
-    {
-        "name": "CZ",
-        "avatar": "👨‍🎨",
-        "persona": "You are 赵长鹏, the co-founder and former CEO of Binance",
-        "twitter_post_url_prefix": "https://x.com/cz_binance",
-        "chroma_path": "/tmp/chroma/twitter/cz"
-    }
-]
+if 'import_status' not in st.session_state:
+    st.session_state.import_status = ""
 
 # Initialize the chat model
 def get_chat_model():
@@ -82,16 +52,16 @@ Make the questions specific and related to the context.
 """
 
 
-def generate_prompt(user_message):
-    chroma_path = users[st.session_state.selected_user]['chroma_path']
+def generate_prompt(user_message, selected_user):
+    chroma_path = selected_user.chroma_path
     print(f"chroma_path: {chroma_path}")
 
-    # Prepare the DB.
+    # Prepare the VectorDB.
     embedding_function = OpenAIEmbeddings()
-    db = Chroma(persist_directory=chroma_path, embedding_function=embedding_function)
+    vector_db = Chroma(persist_directory=chroma_path, embedding_function=embedding_function)
 
-    # Search the DB.
-    results = db.similarity_search_with_relevance_scores(user_message, k=3)
+    # Search the VectorDB.
+    results = vector_db.similarity_search_with_relevance_scores(user_message, k=3)
     print(f"Results: {results}")
     if len(results) == 0 or results[0][1] < 0.7:
         print(f"Unable to find matching results.")
@@ -106,21 +76,70 @@ def generate_prompt(user_message):
 if 'messages' not in st.session_state:
     st.session_state.messages = []
 
-# Sidebar for user selection
+# Get database session
+pgsql_db = next(get_pgsql_db())
+# users = get_users(pgsql_db)
+
+# Sidebar for user selection and import
 with st.sidebar:
-    st.title("Select User")
+    st.title("User Management")
     
-    # Create a dropdown with user avatars and names
-    user_options = [f"{user['avatar']} {user['name']}" for user in users]
-    selected_user_display = st.selectbox(
-        "Choose a persona:",
-        user_options,
-        index=0 if st.session_state.selected_user is None else user_options.index(f"{users[st.session_state.selected_user]['avatar']} {users[st.session_state.selected_user]['name']}")
-    )
+    # Search and import section
+    st.subheader("Import New User")
+    twitter_handle = st.text_input("Enter Twitter handle (without @)", key="twitter_handle")
+    if st.button("Import User"):
+        if twitter_handle:
+            # Create a progress bar
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            # Try to insert new user
+            result = insert_new_user_to_pgsql_db(twitter_handle, progress_bar, status_text)
+            
+            if result.startswith("User successfully added"):
+                # Update final status
+                status_text.text(f"Successfully imported data for @{twitter_handle}!")
+                progress_bar.progress(100)
+                
+                # Store final status
+                st.session_state.import_status = result
+            else:
+                # Show error message
+                status_text.text(result)
+                st.session_state.import_status = result
+        else:
+            st.session_state.import_status = "Please enter a Twitter handle"
     
-    # Update selected user
-    selected_user_index = user_options.index(selected_user_display)
-    st.session_state.selected_user = selected_user_index
+    # Display import status
+    if st.session_state.import_status:
+        st.text_area("Import Status", value=st.session_state.import_status, height=100, disabled=True)
+    
+    st.divider()
+    
+    # User selection
+    st.subheader("Select User")
+    users = get_users(pgsql_db)
+    if not users:
+        st.warning("No fully imported users available. Please import a user first.")
+    else:
+        # Create a two-column layout
+        col1, col2 = st.columns([3, 1])
+
+        with col1:
+            # Simple dropdown with just names
+            user_names = [user.name for user in users]
+            selected_name = st.selectbox("Choose a persona:", user_names)
+            
+            # Update selected user index
+            st.session_state.selected_user = user_names.index(selected_name)
+
+        with col2:
+            # Add some vertical spacing and show avatar
+            st.markdown("<div style='margin-top: 1.6rem;'>", unsafe_allow_html=True)
+            if st.session_state.selected_user is not None:
+                st.image(users[st.session_state.selected_user].avatar, width=40)
+            st.markdown("</div>", unsafe_allow_html=True)
+
 
 # Main chat interface
 st.title("AI Chat Interface")
@@ -153,11 +172,11 @@ if question := st.chat_input("What would you like to ask?"):
     # Initialize chat model
     chat = get_chat_model()
 
-    answer_with_RAG, search_results, context_text = generate_prompt(question)
+    answer_with_RAG, search_results, context_text = generate_prompt(question, selected_user)
     # print(f"prompt_with_RAG: {prompt_with_RAG}")
 
     # Create system message with persona
-    system_message = SystemMessage(content=selected_user["persona"])
+    system_message = SystemMessage(content=selected_user.persona)
     human_message = HumanMessage(content=answer_with_RAG)
     
     print(f"system_message: {system_message}\n\n")
@@ -181,7 +200,7 @@ if question := st.chat_input("What would you like to ask?"):
     for doc, score in search_results:
         if hasattr(doc, 'metadata') and 'source' in doc.metadata:
             if 'type' not in doc.metadata or doc.metadata['type'] == 'TW':  # Only posts from Twitter has open ref. Old import don't have 'type':
-                ref = f"{selected_user['twitter_post_url_prefix']}/status/{doc.metadata['source']}"
+                ref = f"{selected_user.twitter_post_url_prefix}/status/{doc.metadata['source']}"
                 references.append(ref)
             elif  doc.metadata['type'] == 'FC': # Farcaster not open
                 ref = f"Farcaster: {doc.metadata['source']}"

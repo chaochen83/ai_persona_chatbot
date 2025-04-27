@@ -39,11 +39,9 @@ FID = "5650"
 
 # heyibinance
 # CHROMA_PATH = "/tmp/chroma/twitter/heyi"
-# tw_user_id = 1003840309166366721
 
 # cz_binance
 # CHROMA_PATH = "/tmp/chroma/twitter/cz"
-# tw_user_id = 902926941413453824
 
 
 how_many_pages = 50
