@@ -117,4 +117,8 @@ def import_twitter_data(tw_user_id, CHROMA_PATH, progress_callback: Callable[[in
         docs, embedding_function, persist_directory=CHROMA_PATH
     )
     print(f"Saved {len(docs)} chunks to {CHROMA_PATH}.")
+
+    if progress_callback:
+        progress_callback(progress, f"Saved {len(docs)} chunks.")
+
     return len(docs) 

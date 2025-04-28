@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker
 import os
 from dotenv import load_dotenv
 import requests
+from crawlers.import_farcaster import checkUserHasFarcaster, import_farcaster_data
 from crawlers.import_twitter import import_twitter_data
 from sqlalchemy.orm import Session
 
@@ -60,7 +61,7 @@ def get_users(pgsql_db: Session):
     print(f"enter get_users()")
     return pgsql_db.query(User).filter(User.status == STATUS_FULLY_IMPORTED).order_by(User.id).all()
 
-def insert_new_user_to_pgsql_db(twitter_handle, progress_bar, status_text):
+def insert_new_user_to_pgsql_db(twitter_handle, status_text, progress_bar_tw, progress_bar_fc):
     # Get database session
     db = next(get_pgsql_db())
     
@@ -115,19 +116,42 @@ def insert_new_user_to_pgsql_db(twitter_handle, progress_bar, status_text):
             return f"Error adding user: {str(e)}"
     
     # Update progress after successful database insertion
-    progress_bar.progress(1)
-    status_text.text_area("Status", value=f"Successfully found Twitter user @{twitter_handle}", height=50, disabled=True)
+    progress_bar_tw.progress(1)
+    status_text.text_area("Status", value=f"Successfully found Twitter user @{twitter_handle}", height=50, disabled=True, key="text1")
     
     # Define progress callback
-    def update_progress(progress, status):
-        progress_bar.progress(progress)
+    def update_tw_progress(progress, status):
+        progress_bar_tw.progress(progress)
         status_text.text_area("Status", value=status, height=50, disabled=True)
+
+    def update_fc_progress(progress, status):
+        progress_bar_fc.progress(progress)
+        # status_text.text_area("Status", value=status, height=50, disabled=True, key="text2")    
+        status_text.text(status)    
     
     print(f"twitter id: {tw_user_id}\n\n")
     
     # Import Twitter data with progress updates
-    num_tweets = import_twitter_data(tw_user_id, existing_user.chroma_path if existing_user else new_user.chroma_path, progress_callback=update_progress)
+    num_tweets = import_twitter_data(tw_user_id, existing_user.chroma_path if existing_user else new_user.chroma_path, progress_callback=update_tw_progress)
     
+    # If user has farcaster account, then crawl it as well:
+    fid = checkUserHasFarcaster(tw_user_id)
+    if fid:
+        # Reset progress bar for Farcaster import
+        progress_bar_fc.progress(0)
+        status_text.text_area("Status", value=f"Found Farcaster profile. Importing Farcaster data...", height=50, disabled=True)
+        
+        # Import Farcaster data with the Farcaster progress callback
+        num_casts = import_farcaster_data(fid, existing_user.chroma_path if existing_user else new_user.chroma_path, progress_callback=update_fc_progress)
+
+        if existing_user:
+            existing_user.farcaster_id = fid
+        else:
+            new_user.farcaster_id = fid
+    else:
+        progress_bar_fc.progress(100)
+        status_text.text_area("Status", value=f"Farcaster profile not found.", height=50, disabled=True)
+
     # Update user status to 9 after successful import
     if existing_user:
         existing_user.status = STATUS_FULLY_IMPORTED

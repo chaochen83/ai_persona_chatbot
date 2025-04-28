@@ -89,17 +89,25 @@ with st.sidebar:
     twitter_handle = st.text_input("Enter Twitter handle (without @)", key="twitter_handle")
     if st.button("Import User"):
         if twitter_handle:
-            # Create a progress bar
-            progress_bar = st.progress(0)
+            # Clear any existing progress bars and text areas
+            st.empty()  # Clear any existing content
+            st.empty()  # Clear any existing content
+            st.empty()  # Clear any existing content
+            
+            # Create progress bars with labels
+            st.write("Twitter Import Progress:")
+            progress_bar_tw = st.progress(0)
+            st.write("Farcaster Import Progress:")
+            progress_bar_fc = st.progress(0)
             status_text = st.empty()
             
             # Try to insert new user
-            result = insert_new_user_to_pgsql_db(twitter_handle, progress_bar, status_text)
+            result = insert_new_user_to_pgsql_db(twitter_handle, status_text, progress_bar_tw, progress_bar_fc)
             
             if result.startswith("User successfully added"):
                 # Update final status
                 status_text.text(f"Successfully imported data for @{twitter_handle}!")
-                progress_bar.progress(100)
+                progress_bar_fc.progress(100)
                 
                 # Store final status
                 st.session_state.import_status = result
