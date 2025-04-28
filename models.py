@@ -117,7 +117,7 @@ def insert_new_user_to_pgsql_db(twitter_handle, status_text, progress_bar_tw, pr
     
     # Update progress after successful database insertion
     progress_bar_tw.progress(1)
-    status_text.text_area("Status", value=f"Successfully found Twitter user @{twitter_handle}", height=50, disabled=True, key="text1")
+    status_text.text_area("Status", value=f"Successfully found Twitter user @{twitter_handle}", height=70, disabled=True, key="text1")
     
     # Define progress callback
     def update_tw_progress(progress, status):
