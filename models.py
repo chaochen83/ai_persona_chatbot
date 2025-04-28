@@ -122,11 +122,11 @@ def insert_new_user_to_pgsql_db(twitter_handle, status_text, progress_bar_tw, pr
     # Define progress callback
     def update_tw_progress(progress, status):
         progress_bar_tw.progress(progress)
-        status_text.text_area("Status", value=status, height=50, disabled=True)
+        status_text.text_area("Status", value=status, height=70, disabled=True)
 
     def update_fc_progress(progress, status):
         progress_bar_fc.progress(progress)
-        # status_text.text_area("Status", value=status, height=50, disabled=True, key="text2")    
+        # status_text.text_area("Status", value=status, height=70, disabled=True, key="text2")    
         status_text.text(status)    
     
     print(f"twitter id: {tw_user_id}\n\n")
@@ -139,7 +139,7 @@ def insert_new_user_to_pgsql_db(twitter_handle, status_text, progress_bar_tw, pr
     if fid:
         # Reset progress bar for Farcaster import
         progress_bar_fc.progress(0)
-        status_text.text_area("Status", value=f"Found Farcaster profile. Importing Farcaster data...", height=50, disabled=True)
+        status_text.text_area("Status", value=f"Found Farcaster profile. Importing Farcaster data...", height=70, disabled=True)
         
         # Import Farcaster data with the Farcaster progress callback
         num_casts = import_farcaster_data(fid, existing_user.chroma_path if existing_user else new_user.chroma_path, progress_callback=update_fc_progress)
@@ -150,7 +150,7 @@ def insert_new_user_to_pgsql_db(twitter_handle, status_text, progress_bar_tw, pr
             new_user.farcaster_id = fid
     else:
         progress_bar_fc.progress(100)
-        status_text.text_area("Status", value=f"Farcaster profile not found.", height=50, disabled=True)
+        status_text.text_area("Status", value=f"Farcaster profile not found.", height=70, disabled=True)
 
     # Update user status to 9 after successful import
     if existing_user:
