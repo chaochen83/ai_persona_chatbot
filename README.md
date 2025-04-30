@@ -32,7 +32,7 @@ A Streamlit application that allows users to chat with different AI personas. Th
    ```bash
    # Create the database
    psql -U your_db_user
-   CREATE DATABASE persona_users;
+   CREATE DATABASE ai_persona_users;
    \q
    
    # Initialize the database with initial user data

@@ -30,6 +30,9 @@ def get_chat_model():
         openai_api_key=os.getenv("OPENAI_API_KEY")
     )
 
+# PROMPT_TEMPLATE = """
+# Provide a direct response mimicking my style based on the timeline content:\nEthereum\n\n\n\nNFT\n\n\n\nOpensea \n\nand include only the response itself without any additional text.\n\n\n\n\nAnswer the question based on the above context:  web3?\n
+# """
 PROMPT_TEMPLATE = """
 Provide a direct response mimicking my style based on the timeline content:
 {context} 
