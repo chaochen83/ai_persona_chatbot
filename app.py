@@ -6,12 +6,15 @@ from dotenv import load_dotenv
 from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 import time
+from gate import gate_by_invite_code
 from models import User, get_pgsql_db, STATUS_FULLY_IMPORTED, get_users, insert_new_user_to_pgsql_db
 from sqlalchemy.orm import Session
 import requests
 import json
 from langchain.schema import Document
 import shutil
+
+gate_by_invite_code()
 
 # Load environment variables
 load_dotenv()
@@ -64,7 +67,7 @@ def generate_prompt(user_message, selected_user):
     vector_db = Chroma(persist_directory=chroma_path, embedding_function=embedding_function)
 
     # Search the VectorDB.
-    results = vector_db.similarity_search_with_relevance_scores(user_message, k=3)
+    results = vector_db.similarity_search_with_relevance_scores(user_message, k=20)
     print(f"Results: {results}")
     if len(results) == 0 or results[0][1] < 0.7:
         print(f"Unable to find matching results.")
