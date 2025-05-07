@@ -13,7 +13,7 @@ def gate_by_invite_code():
         if st.button("Submit"):
             if code_input in VALID_CODES:
                 st.session_state.authenticated = True
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Invalid invite code. Try again.")
         st.stop()  # 🚫 Stop here if not authenticated
