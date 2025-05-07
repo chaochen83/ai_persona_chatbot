@@ -2,7 +2,7 @@ import streamlit as st
 
 def gate_by_invite_code():
     # 1. Define valid invite codes
-    VALID_CODES = {"ABC123", "INVITE2025", "SECRETKEY"}
+    VALID_CODES = {"mask", "firefly"}
     # 2. Session state: Check if user is authenticated
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
